@@ -9,8 +9,8 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "tfstate-backend"
-    key            = "terraform.tfstate"
+    bucket         = "tfstate-ghost"
+    key            = "ghost/terraform.tfstate"
     region         = "us-east-2"
     encrypt        = true
     dynamodb_table = "terraform-locks"

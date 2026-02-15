@@ -12,7 +12,7 @@ AWS account for free tier projects (EC2, RDS, S3, etc).
 ## Bootstrap Infrastructure
 
 ### State Management
-- **S3 Bucket:** `tfstate-backend` (encrypted, versioned, public access blocked)
+- **S3 Bucket:** `tfstate-ghost` (encrypted, versioned, public access blocked)
 - **DynamoDB Table:** `terraform-locks` (for state locking)
 
 ### Setup Instructions

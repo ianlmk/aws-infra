@@ -17,22 +17,28 @@ AWS account for hosting Ghost blog on free tier EC2 + RDS + S3.
 
 ### Setup Instructions
 
-1. **AWS CLI Profile:**
+1. **Install OpenTofu:**
+   ```bash
+   brew install opentofu
+   # or download from https://github.com/opentofu/opentofu/releases
+   ```
+
+2. **AWS CLI Profile:**
    ```bash
    aws configure --profile seldon
    ```
    Use credentials from the IAM user `seldon` in this account.
 
-2. **Initialize Terraform:**
+3. **Initialize OpenTofu:**
    ```bash
    cd accounts/ghost-free-tier/terraform
-   terraform init
+   tofu init
    ```
 
-3. **Plan & Apply:**
+4. **Plan & Apply:**
    ```bash
-   terraform plan
-   terraform apply
+   tofu plan
+   tofu apply
    ```
 
 ## Architecture (Planned)

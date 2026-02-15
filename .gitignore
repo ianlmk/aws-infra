@@ -1,6 +1,8 @@
-# Terraform
+# OpenTofu / Terraform
 .terraform/
+.opentofu/
 .terraform.lock.hcl
+.tofu.lock.hcl
 *.tfstate
 *.tfstate.*
 crash.log

@@ -1,6 +1,10 @@
 # AWS Infrastructure
 
-Centralized Terraform infrastructure for all AWS accounts.
+Centralized infrastructure as code using **OpenTofu** (open-source successor to Terraform).
+
+- **Why OpenTofu?** Open source (Apache 2.0), community-maintained, 100% compatible with Terraform HCL
+- **Cost:** Free
+- **State:** S3 + DynamoDB (encrypted, versioned, locked)
 
 ## Structure
 
@@ -16,24 +20,31 @@ accounts/
 
 ## Getting Started
 
-1. **Select an account:**
+1. **Install OpenTofu:**
+   ```bash
+   # https://opentofu.org/docs/intro/install/
+   brew install opentofu  # macOS
+   # or download from https://github.com/opentofu/opentofu/releases
+   ```
+
+2. **Select an account:**
    ```bash
    cd accounts/<account-name>/terraform
    ```
 
-2. **Initialize Terraform:**
+3. **Initialize OpenTofu:**
    ```bash
-   terraform init
+   tofu init
    ```
 
-3. **Plan changes:**
+4. **Plan changes:**
    ```bash
-   terraform plan
+   tofu plan
    ```
 
-4. **Apply:**
+5. **Apply:**
    ```bash
-   terraform apply
+   tofu apply
    ```
 
 ## AWS Credentials
@@ -42,12 +53,13 @@ Each account has a dedicated IAM profile configured locally in `~/.aws/credentia
 
 ## State Management
 
-All Terraform state is stored in S3 with:
-- Encryption enabled
+All OpenTofu state is stored in S3 with:
+- Encryption enabled (AES256)
 - Versioning enabled
 - DynamoDB locking for concurrency
+- Public access blocked
 
-State files are never committed to this repository.
+State files are never committed to this repository (see `.gitignore`).
 
 ## Adding New Accounts
 
@@ -55,6 +67,18 @@ State files are never committed to this repository.
 2. Create `backend.tf`, `variables.tf`, and resource files
 3. Create `accounts/<account-name>/README.md` with account details
 4. Document the account setup and any manual bootstrap steps
+5. Update S3 bucket and DynamoDB table names in `backend.tf` for the new account
+
+Example `backend.tf`:
+```hcl
+backend "s3" {
+  bucket         = "tfstate-<project>-<account-id>"
+  key            = "<project>/terraform.tfstate"
+  region         = "us-east-2"
+  encrypt        = true
+  dynamodb_table = "terraform-locks"
+}
+```
 
 ## Cost Tracking
 

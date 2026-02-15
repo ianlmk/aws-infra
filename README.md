@@ -10,12 +10,15 @@ Centralized infrastructure as code using **OpenTofu** (open-source successor to 
 
 ```
 accounts/
-├── ghost-free-tier/        # Free tier Ghost blog account
+├── free-tier/              # Free tier account (multiple projects)
 │   ├── README.md
 │   └── terraform/
 │       ├── backend.tf      # S3 + DynamoDB backend config
 │       ├── bootstrap.tf    # State management resources
-│       └── variables.tf
+│       ├── variables.tf
+│       └── projects/       # Per-project configurations
+│           ├── ghost/      # Example: Ghost blog project
+│           └── api/        # Example: API project
 ```
 
 ## Getting Started
@@ -27,9 +30,11 @@ accounts/
    # or download from https://github.com/opentofu/opentofu/releases
    ```
 
-2. **Select an account:**
+2. **Select an account (or project):**
    ```bash
    cd accounts/<account-name>/terraform
+   # or for a specific project:
+   cd accounts/<account-name>/terraform/projects/<project-name>
    ```
 
 3. **Initialize OpenTofu:**
@@ -72,15 +77,15 @@ State files are never committed to this repository (see `.gitignore`).
 Example `backend.tf`:
 ```hcl
 backend "s3" {
-  bucket         = "tfstate-<project>-backend"
-  key            = "<project>/terraform.tfstate"
+  bucket         = "tfstate-backend"
+  key            = "terraform.tfstate"  # or "<project>/terraform.tfstate" if shared
   region         = "us-east-2"
   encrypt        = true
   dynamodb_table = "terraform-locks"
 }
 ```
 
-**Note:** Bucket names should not include account IDs or other identifying information. Use descriptive, anonymous names only.
+**Note:** Bucket names should not include account IDs, project names, or other identifying information. Use generic, anonymous names only.
 
 ## Cost Tracking
 

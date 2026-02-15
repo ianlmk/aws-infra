@@ -1,17 +1,18 @@
-# Ghost Free Tier Account
+# Free Tier Account
 
 ## Overview
 
-AWS account for hosting Ghost blog on free tier EC2 + RDS + S3.
+AWS account for free tier projects (EC2, RDS, S3, etc).
 
 - **Region:** us-east-2
 - **Profile:** seldon
 - **Billing:** Free tier only
+- **Purpose:** Experimental projects with no cost commitment
 
 ## Bootstrap Infrastructure
 
 ### State Management
-- **S3 Bucket:** `tfstate-ghost-backend` (encrypted, versioned, public access blocked)
+- **S3 Bucket:** `tfstate-backend` (encrypted, versioned, public access blocked)
 - **DynamoDB Table:** `terraform-locks` (for state locking)
 
 ### Setup Instructions

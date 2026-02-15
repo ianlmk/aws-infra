@@ -11,7 +11,7 @@ variable "environment" {
 }
 
 variable "project_name" {
-  description = "Project name for tagging"
+  description = "Project name for tagging (can be overridden per project)"
   type        = string
-  default     = "ghost-blog"
+  default     = "free-tier-projects"
 }

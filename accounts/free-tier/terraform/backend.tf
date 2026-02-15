@@ -9,8 +9,8 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "tfstate-ghost-backend"
-    key            = "ghost/terraform.tfstate"
+    bucket         = "tfstate-backend"
+    key            = "terraform.tfstate"
     region         = "us-east-2"
     encrypt        = true
     dynamodb_table = "terraform-locks"
@@ -23,9 +23,8 @@ provider "aws" {
 
   default_tags {
     tags = {
-      Project     = "ghost-blog"
       Environment = "free-tier"
-      ManagedBy   = "terraform"
+      ManagedBy   = "opentofu"
     }
   }
 }

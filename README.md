@@ -12,7 +12,7 @@ Centralized infrastructure as code using **OpenTofu** (open-source successor to 
 accounts/
 ├── free-tier/              # Free tier account (multiple projects)
 │   ├── README.md
-│   └── terraform/
+│   └── tofu/               # OpenTofu infrastructure
 │       ├── backend.tf      # S3 + DynamoDB backend config
 │       ├── bootstrap.tf    # State management resources
 │       ├── variables.tf
@@ -32,9 +32,9 @@ accounts/
 
 2. **Select an account (or project):**
    ```bash
-   cd accounts/<account-name>/terraform
+   cd accounts/<account-name>/tofu
    # or for a specific project:
-   cd accounts/<account-name>/terraform/projects/<project-name>
+   cd accounts/<account-name>/tofu/projects/<project-name>
    ```
 
 3. **Initialize OpenTofu:**
@@ -68,7 +68,7 @@ State files are never committed to this repository (see `.gitignore`).
 
 ## Adding New Accounts
 
-1. Create `accounts/<account-name>/terraform/` directory
+1. Create `accounts/<account-name>/tofu/` directory
 2. Create `backend.tf`, `variables.tf`, and resource files
 3. Create `accounts/<account-name>/README.md` with account details
 4. Document the account setup and any manual bootstrap steps

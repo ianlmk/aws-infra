@@ -31,7 +31,7 @@ AWS account for free tier projects (EC2, RDS, S3, etc).
 
 3. **Initialize OpenTofu:**
    ```bash
-   cd accounts/ghost-free-tier/terraform
+   cd accounts/free-tier/tofu
    tofu init
    ```
 

@@ -2,7 +2,7 @@
 # These resources were created via AWS CLI and will be imported into Terraform
 
 resource "aws_s3_bucket" "terraform_state" {
-  bucket = "tfstate-ghost-870946031520"
+  bucket = "tfstate-ghost-backend"
 }
 
 resource "aws_s3_bucket_versioning" "terraform_state" {

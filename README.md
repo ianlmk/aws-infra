@@ -72,13 +72,15 @@ State files are never committed to this repository (see `.gitignore`).
 Example `backend.tf`:
 ```hcl
 backend "s3" {
-  bucket         = "tfstate-<project>-<account-id>"
+  bucket         = "tfstate-<project>-backend"
   key            = "<project>/terraform.tfstate"
   region         = "us-east-2"
   encrypt        = true
   dynamodb_table = "terraform-locks"
 }
 ```
+
+**Note:** Bucket names should not include account IDs or other identifying information. Use descriptive, anonymous names only.
 
 ## Cost Tracking
 

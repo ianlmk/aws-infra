@@ -4,7 +4,6 @@
 
 AWS account for hosting Ghost blog on free tier EC2 + RDS + S3.
 
-- **Account ID:** 870946031520
 - **Region:** us-east-2
 - **Profile:** seldon
 - **Billing:** Free tier only
@@ -12,7 +11,7 @@ AWS account for hosting Ghost blog on free tier EC2 + RDS + S3.
 ## Bootstrap Infrastructure
 
 ### State Management
-- **S3 Bucket:** `tfstate-ghost-870946031520` (encrypted, versioned, public access blocked)
+- **S3 Bucket:** `tfstate-ghost-backend` (encrypted, versioned, public access blocked)
 - **DynamoDB Table:** `terraform-locks` (for state locking)
 
 ### Setup Instructions

@@ -2,17 +2,20 @@
 # AWS Bootstrap: IAM User, Policies, and State Backend Setup      #
 #================================================================#
 # 
-# Purpose: Create opentofu IAM user with all required permissions
+# Purpose: Create infrastructure automation user with permissions
 #          and bootstrap the S3 state backend + DynamoDB locking
 #
 # Prerequisites:
-#   - AWS credentials configured for admin user (player1)
+#   - AWS credentials configured (default or specified profile)
 #   - Run from bootstrap/ directory
 #   - terraform init
 #   - terraform apply
 #
-# Run As: player1 (default profile) in account 143551597089
-# Output: Access keys for opentofu user (add to ~/.aws/credentials)
+# Output: Access keys for infrastructure automation user
+#         (add to ~/.aws/credentials under [opentofu] profile)
+#
+# OPSEC: Uses generic names (tfstate-0001x) to avoid identifying
+#        infrastructure or accounts in committed code.
 #
 #================================================================#
 
@@ -25,14 +28,11 @@ terraform {
       version = "~> 5.0"
     }
   }
-
-  # Note: Bootstrap runs locally; no remote state
-  # Once complete, switch to S3 backend in other projects
 }
 
 provider "aws" {
   region  = var.aws_region
-  profile = var.admin_profile  # Run as admin user (player1)
+  profile = var.admin_profile
 
   default_tags {
     tags = {
@@ -42,6 +42,12 @@ provider "aws" {
     }
   }
 }
+
+#================================================#
+# Data: Get current AWS account ID              #
+#================================================#
+
+data "aws_caller_identity" "current" {}
 
 #================================================#
 # 1. Create opentofu IAM User                   #
@@ -57,54 +63,27 @@ resource "aws_iam_user" "opentofu" {
 }
 
 #================================================#
-# 2. Create Access Keys (for ~/.aws/credentials)#
+# 2. Create Access Key for opentofu User        #
 #================================================#
 
 resource "aws_iam_access_key" "opentofu" {
   user = aws_iam_user.opentofu.name
-
-  # Safeguard: Prevent accidental key rotation
-  lifecycle {
-    create_before_destroy = true
-  }
 }
 
 #================================================#
-# 3. Attach IAM Policies                        #
+# 3. Create IAM Policies (MANAGED)              #
 #================================================#
+# Using AWS managed policies + custom managed policies to avoid
+# the 2048-byte inline policy limit and 10-policy-per-user limit.
+# Managed policies support up to 10KB per policy and 20 per user.
 
-#------------------#
-# Policy 1: EC2 Key Pair Management
-#------------------#
+#----------------------------------#
+# Managed Policy 1: Full Infrastructure
+#----------------------------------#
 
-resource "aws_iam_user_policy" "opentofu_ec2_keypair" {
-  name = "${var.infra_user_name}-ec2-keypair"
-  user = aws_iam_user.opentofu.name
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "EC2KeyPairManagement"
-        Effect = "Allow"
-        Action = [
-          "ec2:ImportKeyPair",
-          "ec2:DeleteKeyPair",
-          "ec2:DescribeKeyPairs"
-        ]
-        Resource = "*"
-      }
-    ]
-  })
-}
-
-#------------------#
-# Policy 2: Full Infrastructure Management
-#------------------#
-
-resource "aws_iam_user_policy" "opentofu_infrastructure" {
-  name = "${var.infra_user_name}-infrastructure"
-  user = aws_iam_user.opentofu.name
+resource "aws_iam_policy" "infrastructure" {
+  name        = "${var.infra_user_name}-infrastructure"
+  description = "Full infrastructure management permissions for Terraform"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -284,18 +263,33 @@ resource "aws_iam_user_policy" "opentofu_infrastructure" {
           "iam:ListAttachedUserPolicies"
         ]
         Resource = "*"
+      },
+      {
+        Sid    = "EC2KeyPairManagement"
+        Effect = "Allow"
+        Action = [
+          "ec2:ImportKeyPair",
+          "ec2:DeleteKeyPair",
+          "ec2:DescribeKeyPairs"
+        ]
+        Resource = "*"
       }
     ]
   })
 }
 
-#------------------#
-# Policy 3: State Backend Access
-#------------------#
+resource "aws_iam_user_policy_attachment" "infrastructure" {
+  user       = aws_iam_user.opentofu.name
+  policy_arn = aws_iam_policy.infrastructure.arn
+}
 
-resource "aws_iam_user_policy" "opentofu_state_backend" {
-  name = "${var.infra_user_name}-state-backend"
-  user = aws_iam_user.opentofu.name
+#----------------------------------#
+# Managed Policy 2: State Backend
+#----------------------------------#
+
+resource "aws_iam_policy" "state_backend" {
+  name        = "${var.infra_user_name}-state-backend"
+  description = "S3 and DynamoDB state backend access"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -311,8 +305,8 @@ resource "aws_iam_user_policy" "opentofu_state_backend" {
           "s3:DeleteObject"
         ]
         Resource = [
-          "arn:aws:s3:::${local.computed_bucket_name}",
-          "arn:aws:s3:::${local.computed_bucket_name}/*"
+          "arn:aws:s3:::${local.state_bucket_name}",
+          "arn:aws:s3:::${local.state_bucket_name}/*"
         ]
       },
       {
@@ -330,13 +324,18 @@ resource "aws_iam_user_policy" "opentofu_state_backend" {
   })
 }
 
-#------------------#
-# Policy 4: Cost Explorer
-#------------------#
+resource "aws_iam_user_policy_attachment" "state_backend" {
+  user       = aws_iam_user.opentofu.name
+  policy_arn = aws_iam_policy.state_backend.arn
+}
 
-resource "aws_iam_user_policy" "opentofu_cost_explorer" {
-  name = "${var.infra_user_name}-cost-explorer"
-  user = aws_iam_user.opentofu.name
+#----------------------------------#
+# Managed Policy 3: Cost Explorer
+#----------------------------------#
+
+resource "aws_iam_policy" "cost_explorer" {
+  name        = "${var.infra_user_name}-cost-explorer"
+  description = "Cost Explorer access for cheapass CLI"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -356,15 +355,24 @@ resource "aws_iam_user_policy" "opentofu_cost_explorer" {
   })
 }
 
+resource "aws_iam_user_policy_attachment" "cost_explorer" {
+  user       = aws_iam_user.opentofu.name
+  policy_arn = aws_iam_policy.cost_explorer.arn
+}
+
 #================================================#
 # 4. S3 Bucket for Terraform State              #
 #================================================#
 
+locals {
+  state_bucket_name = var.state_bucket_name
+}
+
 resource "aws_s3_bucket" "terraform_state" {
-  bucket = local.computed_bucket_name
+  bucket = local.state_bucket_name
 
   tags = {
-    Name        = local.computed_bucket_name
+    Name        = local.state_bucket_name
     Description = "Terraform state backend"
   }
 }
@@ -397,7 +405,7 @@ resource "aws_s3_bucket_public_access_block" "terraform_state" {
 }
 
 #================================================#
-# 5. DynamoDB Table for State Locking           #
+# 5. DynamoDB Table for Terraform Locking       #
 #================================================#
 
 resource "aws_dynamodb_table" "terraform_locks" {
@@ -417,16 +425,56 @@ resource "aws_dynamodb_table" "terraform_locks" {
 }
 
 #================================================#
-# Data Sources & Locals                         #
+# 6. Outputs: Access Key & Instructions         #
 #================================================#
 
-data "aws_caller_identity" "current" {}
+output "opentofu_user_created" {
+  value       = aws_iam_user.opentofu.name
+  description = "IAM user created for infrastructure automation"
+}
 
-#------------------#
-# Computed bucket name if not provided
-#------------------#
+output "opentofu_access_key_id" {
+  value       = aws_iam_access_key.opentofu.id
+  description = "Access key ID for opentofu user"
+  sensitive   = true
+}
 
-locals {
-  # If state_bucket_name is empty, generate unique name using account ID
-  computed_bucket_name = var.state_bucket_name != "" ? var.state_bucket_name : "tfstate-${data.aws_caller_identity.current.account_id}-ghost"
+output "opentofu_secret_access_key" {
+  value       = aws_iam_access_key.opentofu.secret
+  description = "Secret access key for opentofu user"
+  sensitive   = true
+}
+
+output "state_bucket_name" {
+  value       = aws_s3_bucket.terraform_state.id
+  description = "S3 bucket name for state backend"
+}
+
+output "state_lock_table_name" {
+  value       = aws_dynamodb_table.terraform_locks.name
+  description = "DynamoDB table name for state locking"
+}
+
+output "setup_instructions" {
+  value = <<-EOT
+    ✅ Bootstrap Complete!
+    
+    1. Extract credentials:
+       terraform output -json | jq -r '.opentofu_access_key_id.value'
+       terraform output -json | jq -r '.opentofu_secret_access_key.value'
+    
+    2. Add to ~/.aws/credentials:
+       [opentofu]
+       aws_access_key_id = <from step 1>
+       aws_secret_access_key = <from step 1>
+    
+    3. Verify:
+       aws sts get-caller-identity --profile opentofu
+    
+    4. Deploy infrastructure:
+       cd ../free-tier
+       terraform init -upgrade
+       terraform apply
+  EOT
+  description = "Setup instructions for opentofu user"
 }

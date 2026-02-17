@@ -59,6 +59,12 @@ module "web_server" {
   monitoring_enabled = each.value.monitoring_enabled
   tags               = local.common_tags
 
+  # Inject SSH public key via user_data from Vault
+  user_data = base64encode(templatefile(
+    "${path.module}/user-data.sh",
+    { public_key = data.vault_generic_secret.ssh_keys.data["public_key"] }
+  ))
+
   # Ensure key pair exists before creating instance
   depends_on = [aws_key_pair.ghost_web]
 }

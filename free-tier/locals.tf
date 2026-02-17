@@ -53,6 +53,65 @@ locals {
         ]
       })
     }
+    cheapass_ce = {
+      user        = "svc_cheapass"
+      policy_name = "cheapass-cost-explorer"
+      policy = jsonencode({
+        Version = "2012-10-17"
+        Statement = [
+          {
+            Sid    = "CostExplorerRead"
+            Effect = "Allow"
+            Action = [
+              "ce:GetCostAndUsage",
+              "ce:GetCostForecast",
+              "ce:DescribeCostCategoryDefinition",
+              "ce:ListCostAllocationTags"
+            ]
+            Resource = "*"
+          }
+        ]
+      })
+    }
+    opentofu_ce = {
+      user        = "opentofu"
+      policy_name = "opentofu-cost-explorer"
+      policy = jsonencode({
+        Version = "2012-10-17"
+        Statement = [
+          {
+            Sid    = "CostExplorerRead"
+            Effect = "Allow"
+            Action = [
+              "ce:GetCostAndUsage",
+              "ce:GetCostForecast",
+              "ce:DescribeCostCategoryDefinition",
+              "ce:ListCostAllocationTags"
+            ]
+            Resource = "*"
+          }
+        ]
+      })
+    }
+    opentofu_ec2_keypair = {
+      user        = "opentofu"
+      policy_name = "opentofu-ec2-keypair"
+      policy = jsonencode({
+        Version = "2012-10-17"
+        Statement = [
+          {
+            Sid    = "EC2KeyPairManagement"
+            Effect = "Allow"
+            Action = [
+              "ec2:ImportKeyPair",
+              "ec2:DeleteKeyPair",
+              "ec2:DescribeKeyPairs"
+            ]
+            Resource = "*"
+          }
+        ]
+      })
+    }
   }
 }
 

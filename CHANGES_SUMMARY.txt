@@ -1,0 +1,146 @@
+=============================================================================
+GENERIC MODULE REFERENCES: CMS/APP AGNOSTIC REFACTORING
+=============================================================================
+
+COMPLETED: 2026-02-16 14:57 PST
+
+FILES MODIFIED
+==============
+
+free-tier/
+├── variables.tf ...................... UPDATED (ghost_* → app_*)
+├── main.tf ........................... UPDATED (ghost_network → network, etc.)
+├── outputs.tf ........................ UPDATED (ghost_* → app_*)
+├── free-tier.auto.tfvars ............. UPDATED (new generic vars)
+└── ghost.auto.tfvars ................. DELETED (no longer needed)
+
+DOCUMENTATION ADDED
+===================
+
+├── APP_AGNOSTIC.md ................... NEW (how to deploy any CMS)
+├── GENERIC_REFACTORING.md ............ NEW (what changed, why)
+├── ARCHITECTURE.md ................... UPDATED (generic composition pattern)
+└── REFACTORING.md .................... UPDATED (added CMS-agnostic note)
+
+MODULE STRUCTURE (UNCHANGED)
+============================
+
+modules/
+├── network/               # VPC + Security Groups (prerequisite)
+├── vpc_network/           # Raw VPC primitives
+├── security_groups/       # SG tier definitions
+├── ec2_compute/           # EC2 + EIP
+├── rds_database/          # RDS MySQL/Postgres
+├── s3/                    # S3 + encryption + versioning
+├── iam/                   # IAM users/policies
+└── route53/               # Route53 zones
+
+VARIABLE CHANGES
+================
+
+REMOVED (Ghost-specific):
+  ghost_enabled
+  ghost_project_name
+  ghost_instance_type
+  ghost_domain_name
+  ghost_zone_key
+  ghost_db_name
+  ghost_db_username
+  ghost_db_password
+  ghost_db_instance_class
+  ghost_allocated_storage
+  ghost_enable_backups
+  ghost_backup_retention_days
+
+ADDED (Generic):
+  app_enabled ...................... bool (enable/disable app stack)
+  app_name ......................... string (ghost, wordpress, myapp, etc.)
+  web_instance_type ................ string (t3.micro, t3.small, etc.)
+  domain_name ...................... string (your domain)
+  zone_key ......................... string (route53 zone key)
+  db_name .......................... string (database name)
+  db_username ...................... string (db admin user)
+  db_password ...................... string (SENSITIVE, use env var)
+  db_instance_class ................ string (db.t3.micro, etc.)
+  db_allocated_storage ............. number (GB)
+  enable_backups ................... bool (enable RDS backups)
+  backup_retention_days ............ number (7, 14, 30, etc.)
+
+MODULE REFERENCES (IN main.tf)
+==============================
+
+OLD:
+  module "ghost_network"
+  module "ghost_web"
+  module "ghost_database"
+  module "ghost_storage"
+  resource "aws_route53_record" "ghost_web"
+  resource "aws_route53_record" "ghost_www"
+
+NEW:
+  module "network"
+  module "web_server"
+  module "database"
+  module "storage"
+  resource "aws_route53_record" "web"
+  resource "aws_route53_record" "www"
+
+OUTPUTS (IN outputs.tf)
+=======================
+
+OLD:
+  output "ghost_network"
+  output "ghost_web_server"
+  output "ghost_database"
+  output "ghost_storage"
+  output "ghost_dns"
+
+NEW:
+  output "app_network"
+  output "app_web_server"
+  output "app_database"
+  output "app_storage"
+  output "app_dns"
+
+HOW TO USE
+==========
+
+1. Single app (Ghost):
+   $ export TF_VAR_db_password="password"
+   $ tofu apply
+
+2. Single app (WordPress):
+   # Edit free-tier.auto.tfvars:
+   app_name = "wordpress"
+   db_name = "wordpress"
+   
+   $ export TF_VAR_db_password="password"
+   $ tofu apply
+
+3. Multiple apps (Ghost + WordPress):
+   # Edit variables.tf: add app2_*, app3_*, etc.
+   # Edit main.tf: add app2_* modules
+   # Edit free-tier.auto.tfvars: add app2_* values
+   
+   $ tofu apply
+
+BENEFITS
+========
+
+✅ Same infrastructure code for any CMS/app
+✅ No app-specific modules to maintain
+✅ Cleaner, shorter variable names
+✅ Generic module references (web_server, not ghost_web)
+✅ Easy multi-app scaling (copy blocks, change prefix)
+✅ CMS-agnostic (drop-in replacement friendly)
+
+VALIDATION
+==========
+
+✅ HCL syntax: PASS
+✅ Module references: PASS
+✅ Variable naming: CONSISTENT
+✅ Output naming: CONSISTENT
+✅ Ready for tofu plan/apply
+
+=============================================================================

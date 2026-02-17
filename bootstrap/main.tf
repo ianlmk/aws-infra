@@ -311,8 +311,8 @@ resource "aws_iam_user_policy" "opentofu_state_backend" {
           "s3:DeleteObject"
         ]
         Resource = [
-          "arn:aws:s3:::${var.state_bucket_name}",
-          "arn:aws:s3:::${var.state_bucket_name}/*"
+          "arn:aws:s3:::${local.computed_bucket_name}",
+          "arn:aws:s3:::${local.computed_bucket_name}/*"
         ]
       },
       {
@@ -361,10 +361,10 @@ resource "aws_iam_user_policy" "opentofu_cost_explorer" {
 #================================================#
 
 resource "aws_s3_bucket" "terraform_state" {
-  bucket = var.state_bucket_name
+  bucket = local.computed_bucket_name
 
   tags = {
-    Name        = var.state_bucket_name
+    Name        = local.computed_bucket_name
     Description = "Terraform state backend"
   }
 }
@@ -417,7 +417,16 @@ resource "aws_dynamodb_table" "terraform_locks" {
 }
 
 #================================================#
-# Data Sources                                  #
+# Data Sources & Locals                         #
 #================================================#
 
 data "aws_caller_identity" "current" {}
+
+#------------------#
+# Computed bucket name if not provided
+#------------------#
+
+locals {
+  # If state_bucket_name is empty, generate unique name using account ID
+  computed_bucket_name = var.state_bucket_name != "" ? var.state_bucket_name : "tfstate-${data.aws_caller_identity.current.account_id}-ghost"
+}

@@ -13,8 +13,9 @@ aws_region = "us-east-2"
 infra_user_name = "opentofu"
 
 # S3 bucket name for Terraform state (must be globally unique)
-# Naming convention: tfstate-PROJECT-PURPOSE
-state_bucket_name = "tfstate-ghost-p1"
+# If left empty, will be auto-generated as: tfstate-ACCOUNT_ID-ghost
+# Or override with custom name: tfstate-mycompany-ghost
+state_bucket_name = ""
 
 # DynamoDB table name for Terraform state locking
 state_lock_table_name = "terraform-locks"

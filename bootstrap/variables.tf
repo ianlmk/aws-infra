@@ -19,11 +19,11 @@ variable "infra_user_name" {
 variable "state_bucket_name" {
   description = "S3 bucket name for Terraform state (must be globally unique)"
   type        = string
-  default     = "tfstate-ghost-p1"
+  default     = ""  # Will be computed from account_id + project if empty
   
   validation {
-    condition     = can(regex("^tfstate-[a-z0-9-]+$", var.state_bucket_name))
-    error_message = "State bucket name must start with 'tfstate-' and contain only lowercase letters, numbers, and hyphens."
+    condition     = var.state_bucket_name == "" || can(regex("^tfstate-[a-z0-9-]+$", var.state_bucket_name))
+    error_message = "State bucket name must start with 'tfstate-' and contain only lowercase letters, numbers, and hyphens, or leave empty for auto-generated name."
   }
 }
 

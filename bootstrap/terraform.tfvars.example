@@ -1,0 +1,20 @@
+# Bootstrap Configuration Example
+# Copy to terraform.tfvars and customize as needed
+
+# AWS profile for admin user running bootstrap
+# Should be an admin user with IAM permissions (e.g., player1)
+admin_profile = "default"
+
+# AWS region where infrastructure will be deployed
+aws_region = "us-east-2"
+
+# IAM username for infrastructure automation
+# This user will be created and given all necessary permissions
+infra_user_name = "opentofu"
+
+# S3 bucket name for Terraform state (must be globally unique)
+# Naming convention: tfstate-PROJECT-PURPOSE
+state_bucket_name = "tfstate-ghost-p1"
+
+# DynamoDB table name for Terraform state locking
+state_lock_table_name = "terraform-locks"

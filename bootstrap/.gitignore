@@ -1,0 +1,21 @@
+# Terraform state files
+terraform.tfstate
+terraform.tfstate.*
+.terraform.lock.hcl
+
+# Terraform cache
+.terraform/
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.vscode/
+
+# Local variables (if used)
+*.tfvars
+!*.tfvars.example

@@ -16,12 +16,17 @@ terraform {
     }
   }
 
-  backend "s3" {
-    bucket         = "tfstate-ghost-p1"
-    key            = "ghost/terraform.tfstate"
-    region         = "us-east-2"
-    encrypt        = true
-    dynamodb_table = "terraform-locks"
+  # backend "s3" {
+  #   bucket         = "tfstate-ghost-p1"
+  #   key            = "ghost/terraform.tfstate"
+  #   region         = "us-east-2"
+  #   encrypt        = true
+  #   dynamodb_table = "terraform-locks"
+  # }
+  
+  # Using local backend for now (opentofu user lacks S3 permissions)
+  backend "local" {
+    path = "terraform.tfstate"
   }
 }
 

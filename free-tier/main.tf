@@ -65,8 +65,13 @@ module "web_server" {
     { public_key = data.vault_generic_secret.ssh_keys.data["public_key"] }
   ))
 
-  # Ensure key pair exists before creating instance
-  depends_on = [aws_key_pair.ghost_web]
+  # Ensure prerequisites exist before creating instance:
+  # 1. aws_key_pair.ghost_web - SSH key pair registered in AWS
+  # 2. data.vault_generic_secret.ssh_keys - SSH secret loaded from Vault
+  depends_on = [
+    aws_key_pair.ghost_web,
+    data.vault_generic_secret.ssh_keys
+  ]
 }
 
 #-----------#

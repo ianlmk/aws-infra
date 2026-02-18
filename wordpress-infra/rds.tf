@@ -3,7 +3,7 @@
 # DB Subnet Group
 resource "aws_db_subnet_group" "wordpress" {
   name       = "${local.app_name}-wordpress-db-subnet-group"
-  subnet_ids = data.aws_subnets.private.ids
+  subnet_ids = local.private_subnet_ids
 
   tags = merge(
     local.wordpress_tags,
@@ -15,7 +15,7 @@ resource "aws_db_subnet_group" "wordpress" {
 resource "aws_security_group" "rds_wordpress" {
   name        = "${local.app_name}-wordpress-db-sg"
   description = "Security group for WordPress RDS MySQL"
-  vpc_id      = data.aws_vpc.main.id
+  vpc_id      = local.vpc_id
 
   ingress {
     from_port       = 3306

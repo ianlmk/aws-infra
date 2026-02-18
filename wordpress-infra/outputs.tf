@@ -50,12 +50,17 @@ output "wordpress_admin_url" {
 
 output "ec2_public_ip" {
   description = "EC2 instance public IP"
-  value       = data.aws_instance.web_server.public_ip
+  value       = aws_instance.wordpress_web.public_ip
 }
 
 output "ec2_instance_id" {
   description = "EC2 instance ID"
-  value       = data.aws_instance.web_server.id
+  value       = aws_instance.wordpress_web.id
+}
+
+output "ec2_private_ip" {
+  description = "EC2 instance private IP"
+  value       = aws_instance.wordpress_web.private_ip
 }
 
 output "iam_role_arn" {

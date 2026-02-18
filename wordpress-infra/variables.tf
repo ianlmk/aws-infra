@@ -163,3 +163,22 @@ variable "enable_ssl" {
   type        = bool
   default     = true
 }
+
+# EC2 Instance Configuration
+variable "ec2_instance_type" {
+  description = "EC2 instance type (free tier: t3.micro)"
+  type        = string
+  default     = "t3.micro"
+}
+
+variable "ec2_root_volume_size" {
+  description = "Root volume size in GB"
+  type        = number
+  default     = 30
+}
+
+variable "ec2_root_volume_type" {
+  description = "Root volume type (gp3, gp2, etc.)"
+  type        = string
+  default     = "gp3"
+}

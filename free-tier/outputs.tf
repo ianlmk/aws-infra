@@ -1,115 +1,150 @@
-#------------------#
-# Root Outputs #
-#------------------#
+#---------#
+# VPC Outputs #
+#---------#
 
-output "iam_users" {
-  description = "IAM users created by the IAM module"
-  value       = module.iam.users
-}
-
-output "iam_access_keys" {
-  description = "IAM access key IDs (retrieve secrets from state)"
-  value       = module.iam.access_keys
-}
-
-output "iam_policies" {
-  description = "IAM policies created"
-  value       = module.iam.policies
-}
-
-output "account_info" {
-  description = "AWS account and region information"
-  value = {
-    account_id = local.account_id
-    region     = local.region
+output "vpc_id" {
+  description = "VPC ID (for applications to reference)"
+  value       = {
+    for key, network in module.network :
+    key => network.vpc_id
   }
 }
 
-output "iam_access_keys_secret" {
-  description = "IAM access key secrets (sensitive - do not log)"
-  value       = module.iam.access_keys_secret
-  sensitive   = true
+output "vpc_cidr" {
+  description = "VPC CIDR block"
+  value       = {
+    for key, network in module.network :
+    key => network.vpc_cidr
+  }
 }
 
-output "route53_zones" {
-  description = "Route53 hosted zones"
-  value       = module.route53.zones
+#-----------#
+# Subnet Outputs #
+#-----------#
+
+output "public_subnet_ids" {
+  description = "Public subnet IDs (for web servers)"
+  value       = {
+    for key, network in module.network :
+    key => network.public_subnet_ids
+  }
 }
 
-output "route53_nameservers" {
-  description = "Route53 nameservers for domain registrar configuration"
-  value       = module.route53.nameservers
+output "private_subnet_ids" {
+  description = "Private subnet IDs (for databases, private instances)"
+  value       = {
+    for key, network in module.network :
+    key => network.private_subnet_ids
+  }
+}
+
+output "public_subnet_cidrs" {
+  description = "Public subnet CIDR blocks"
+  value       = {
+    for key, network in module.network :
+    key => network.public_subnet_cidrs
+  }
+}
+
+output "private_subnet_cidrs" {
+  description = "Private subnet CIDR blocks"
+  value       = {
+    for key, network in module.network :
+    key => network.private_subnet_cidrs
+  }
 }
 
 #---------------------#
-# Application Outputs #
+# Security Group Outputs #
 #---------------------#
 
-output "networks" {
-  description = "Network infrastructure (VPC + subnets + security groups) per application"
-  value = {
-    for app_key, network_module in module.network :
-    app_key => {
-      vpc_id              = network_module.vpc_id
-      vpc_cidr            = network_module.vpc_cidr
-      public_subnets     = network_module.public_subnet_ids
-      private_subnets    = network_module.private_subnet_ids
-      web_sg_id          = network_module.web_sg_id
-      app_sg_id          = network_module.app_sg_id
-      database_sg_id     = network_module.database_sg_id
-      nat_gateways       = network_module.nat_gateway_ids
-    }
+output "web_security_group_ids" {
+  description = "Web tier security group IDs (for application servers)"
+  value       = {
+    for key, network in module.network :
+    key => network.web_sg_id
   }
 }
 
-output "web_servers" {
-  description = "Web server details per application"
-  value = {
-    for app_key, web_module in module.web_server :
-    app_key => {
-      instance_id = web_module.instance_id
-      private_ip  = web_module.private_ip
-      public_ip   = web_module.public_ip
-    }
+output "app_security_group_ids" {
+  description = "App tier security group IDs (for application servers)"
+  value       = {
+    for key, network in module.network :
+    key => network.app_sg_id
   }
 }
 
-output "databases" {
-  description = "RDS database details per application"
-  value = {
-    for app_key, db_module in module.database :
-    app_key => {
-      endpoint   = db_module.endpoint
-      address    = db_module.address
-      port       = db_module.port
-      db_name    = db_module.db_name
-      username   = db_module.username
-    }
-  }
-  sensitive = true
-}
-
-output "storage" {
-  description = "S3 storage bucket details per application"
-  value = {
-    for app_key, s3_module in module.storage :
-    app_key => {
-      bucket_id     = s3_module.bucket_id
-      bucket_arn    = s3_module.bucket_arn
-      bucket_domain = s3_module.bucket_domain_name
-    }
+output "database_security_group_ids" {
+  description = "Database tier security group IDs (for RDS)"
+  value       = {
+    for key, network in module.network :
+    key => network.database_sg_id
   }
 }
 
-output "dns_records" {
-  description = "Route53 DNS records created"
-  value = {
-    for record_key, record in aws_route53_record.web :
-    record_key => {
-      fqdn    = record.fqdn
-      name    = record.name
-      type    = record.type
-      records = record.records
-    }
+#-----------#
+# Route53 Outputs #
+#-----------#
+
+output "route53_zone_ids" {
+  description = "Route53 zone IDs (for DNS records)"
+  value       = {
+    for key, zone in module.route53.zones :
+    key => zone.zone_id
   }
+}
+
+output "route53_zone_nameservers" {
+  description = "Route53 nameservers (for domain delegation)"
+  value       = {
+    for key, zone in module.route53.zones :
+    key => zone.name_servers
+  }
+}
+
+#---------#
+# Setup Instructions #
+#---------#
+
+output "setup_instructions" {
+  description = "Instructions for deploying applications"
+  value       = <<-EOF
+✓ Network infrastructure deployed!
+
+This scaffold provides the foundation for applications.
+
+Next steps:
+
+1. Deploy WordPress application:
+   cd ../wordpress-infra
+   cp terraform.tfvars.example terraform.tfvars
+   terraform init
+   terraform apply
+
+2. Deploy Ghost application:
+   cd ../ghost-infra
+   cp terraform.tfvars.example terraform.tfvars
+   terraform init
+   terraform apply
+
+3. Each application will:
+   - Create its own EC2 instance (or use shared network)
+   - Create its own RDS database
+   - Create its own S3 bucket
+   - Register DNS records in Route53
+
+Network Architecture:
+- VPC CIDR: See vpc_cidr output
+- Public subnets: For web servers (EC2)
+- Private subnets: For databases (RDS)
+- Security groups: Preconfigured for web, app, database tiers
+
+To tear down applications independently:
+  cd wordpress-infra && terraform destroy
+  cd ghost-infra && terraform destroy
+
+To tear down the entire network scaffold:
+  cd free-tier && terraform destroy  (removes VPC, subnets, Route53)
+
+EOF
 }

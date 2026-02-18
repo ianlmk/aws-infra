@@ -48,7 +48,7 @@ provider "vault" {
 # Ansible Provider
 provider "ansible" {}
 
-# Get base infrastructure outputs (VPC, EC2, security groups)
+# Get base infrastructure outputs (VPC, subnets, security groups) from free-tier
 data "terraform_remote_state" "base" {
   backend = "s3"
   
@@ -64,33 +64,23 @@ data "vault_generic_secret" "wordpress_password" {
   path = "secret/aws/wordpress/rds"
 }
 
-# Get EC2 instance details
-data "aws_instance" "web_server" {
-  instance_id = data.terraform_remote_state.base.outputs.web_server_instance_id
+# Get AWS caller identity
+data "aws_caller_identity" "current" {}
+
+# Extract outputs from free-tier state (using "default" network key)
+locals {
+  base_vpc_id              = data.terraform_remote_state.base.outputs.vpc_id["default"]
+  base_private_subnet_ids  = data.terraform_remote_state.base.outputs.private_subnet_ids["default"]
+  base_public_subnet_ids   = data.terraform_remote_state.base.outputs.public_subnet_ids["default"]
+  base_app_sg_id           = data.terraform_remote_state.base.outputs.app_security_group_ids["default"]
+  base_db_sg_id            = data.terraform_remote_state.base.outputs.database_security_group_ids["default"]
+  base_web_sg_id           = data.terraform_remote_state.base.outputs.web_security_group_ids["default"]
+  base_route53_zone_ids    = data.terraform_remote_state.base.outputs.route53_zone_ids
 }
 
-# Get VPC and subnet details
+# Get VPC details
 data "aws_vpc" "main" {
-  id = data.terraform_remote_state.base.outputs.vpc_id
-}
-
-data "aws_subnets" "private" {
-  filter {
-    name   = "vpc-id"
-    values = [data.terraform_remote_state.base.outputs.vpc_id]
-  }
-  filter {
-    name   = "tag:Name"
-    values = ["*private*"]
-  }
-}
-
-data "aws_security_group" "app" {
-  vpc_id = data.terraform_remote_state.base.outputs.vpc_id
-  filter {
-    name   = "tag:Name"
-    values = ["*app*"]
-  }
+  id = local.base_vpc_id
 }
 
 # Local variables for convenience
@@ -102,9 +92,16 @@ locals {
   rds_allocated_storage = var.rds_allocated_storage
   rds_instance_class   = var.rds_instance_class
   
+  # VPC references from base infrastructure
+  vpc_id             = local.base_vpc_id
+  private_subnet_ids = local.base_private_subnet_ids
+  public_subnet_ids  = local.base_public_subnet_ids
+  db_sg_id           = local.base_db_sg_id
+  
   # Tags for all WordPress resources
   wordpress_tags = {
     Name        = "${local.app_name}-wordpress"
     Application = "wordpress"
+    IaC         = "true"
   }
 }

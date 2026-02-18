@@ -1,0 +1,40 @@
+# WordPress Infrastructure Configuration
+
+# AWS
+aws_region = "us-east-2"
+vault_token = "seldon"  # Your Vault root token
+
+# Application
+app_name = "app1"  # Generic name (not project/CMS specific)
+
+# WordPress
+wordpress_url            = "https://yourdomain.com"
+wordpress_admin_email    = "admin@yourdomain.com"
+wordpress_php_version    = "8.2"
+wordpress_memory_limit   = "256M"
+wordpress_max_upload_size = "100M"
+
+# RDS MySQL
+mysql_version           = "8.0.35"
+rds_instance_class      = "db.t3.micro"  # Free tier eligible
+rds_allocated_storage   = 20              # GB
+backup_retention_days   = 7
+backup_window           = "02:00-03:00"
+maintenance_window      = "sun:03:00-sun:04:00"
+skip_final_snapshot     = true            # Set to false in production
+enable_deletion_protection = false        # Set to true in production
+
+# Performance and Monitoring
+enable_performance_insights = false       # Optional
+monitoring_interval         = 60         # 60 seconds
+
+# Ansible Deployment
+deploy_wordpress = true                   # Auto-deploy via Ansible
+ssh_private_key_path = "~/.ssh/app1-web-key"
+
+# IAM and Security
+attach_iam_instance_profile = true
+enable_ssm_parameters = false             # Set to true if using AWS Systems Manager
+
+# SSL/TLS
+enable_ssl = true                         # Use Let's Encrypt

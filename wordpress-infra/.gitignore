@@ -1,0 +1,44 @@
+# Terraform state files
+terraform.tfstate*
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Local .terraform directories
+**/.terraform/*
+
+# .tfvars files (contain sensitive data)
+*.tfvars
+*.tfvars.json
+!terraform.tfvars.example
+
+# Ignore override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Lock files (version control optional)
+.terraform.lock.hcl
+
+# Environment files
+.env
+.env.local
+
+# IDE
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.Thumbs.db
+
+# Backup files
+*.backup
+
+# Ansible inventory output
+wordpress_hosts.ini

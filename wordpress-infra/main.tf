@@ -10,9 +10,9 @@ terraform {
       source  = "hashicorp/vault"
       version = "~> 4.0"
     }
-    ansible = {
-      source  = "ansible/ansible"
-      version = "~> 1.0"
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.0"
     }
   }
 

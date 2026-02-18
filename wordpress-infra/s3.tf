@@ -75,6 +75,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "wordpress_uploads" {
   rule {
     id     = "delete-old-versions"
     status = "Enabled"
+    filter {}
 
     noncurrent_version_expiration {
       noncurrent_days = 30
@@ -84,6 +85,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "wordpress_uploads" {
   rule {
     id     = "abort-incomplete-uploads"
     status = "Enabled"
+    filter {}
 
     abort_incomplete_multipart_upload {
       days_after_initiation = 7
@@ -91,5 +93,4 @@ resource "aws_s3_bucket_lifecycle_configuration" "wordpress_uploads" {
   }
 }
 
-# Get current AWS account ID
-data "aws_caller_identity" "current" {}
+# Note: aws_caller_identity is defined in main.tf

@@ -83,7 +83,7 @@ Next steps:
 1. Wait for Ansible deployment to complete (check logs)
 
 2. SSH to EC2 instance:
-   ssh -i ~/.ssh/app1-web-key ansible@${data.aws_instance.web_server.public_ip}
+   ssh -i ~/.ssh/app1-web-key ansible@${aws_instance.wordpress_web.public_ip}
 
 3. Verify WordPress is installed:
    sudo systemctl status apache2
@@ -112,7 +112,7 @@ Next steps:
 Important:
 - Database: ${aws_db_instance.wordpress.address}
 - S3 Bucket: ${aws_s3_bucket.wordpress_uploads.id}
-- EC2 IP: ${data.aws_instance.web_server.public_ip}
+- EC2 IP: ${aws_instance.wordpress_web.public_ip}
 - WordPress URL: ${var.wordpress_url}
 EOF
 }

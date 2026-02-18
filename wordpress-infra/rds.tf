@@ -21,8 +21,8 @@ resource "aws_security_group" "rds_wordpress" {
     from_port       = 3306
     to_port         = 3306
     protocol        = "tcp"
-    security_groups = [data.aws_security_group.app.id]
-    description     = "MySQL from app servers"
+    security_groups = [aws_security_group.wordpress_web.id]  # Allow from WordPress web server
+    description     = "MySQL from WordPress"
   }
 
   egress {
@@ -64,9 +64,9 @@ resource "aws_db_instance" "wordpress" {
   skip_final_snapshot     = var.skip_final_snapshot  # Set to false in production!
 
   # Performance Insights (free tier eligible)
-  performance_insights_enabled    = var.enable_performance_insights
-  performance_insights_retention  = var.performance_insights_retention_days
-  performance_insights_kms_key_id = null
+  performance_insights_enabled          = var.enable_performance_insights
+  performance_insights_retention_period = var.performance_insights_retention_days
+  performance_insights_kms_key_id       = null
 
   # Monitoring
   monitoring_interval = var.monitoring_interval

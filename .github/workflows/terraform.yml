@@ -14,6 +14,29 @@ on:
       - 'free-tier/**'
       - 'wordpress-infra/**'
       - 'ghost-infra/**'
+  # Manual dispatch - deploy specific modules without approval gate
+  workflow_dispatch:
+    inputs:
+      deploy_free_tier:
+        description: 'Deploy free-tier (network scaffold)?'
+        required: false
+        type: boolean
+        default: false
+      deploy_wordpress:
+        description: 'Deploy wordpress-infra?'
+        required: false
+        type: boolean
+        default: false
+      deploy_ghost:
+        description: 'Deploy ghost-infra?'
+        required: false
+        type: boolean
+        default: false
+      skip_approval:
+        description: 'Skip approval gate (manual dispatch only)?'
+        required: false
+        type: boolean
+        default: true
 
 # Approval Requirements:
 #
@@ -78,7 +101,7 @@ jobs:
             echo "ghost-infra=false" >> $GITHUB_OUTPUT
           fi
 
-  # Plan stage - runs on PR
+  # Plan stage - runs on PR (not needed for manual workflow_dispatch)
   plan:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
@@ -160,7 +183,8 @@ jobs:
           fi
         continue-on-error: true
 
-  # Approval gate - manual approval before apply
+  # Approval gate - ONLY for auto-deploy (push to main)
+  # Skipped for workflow_dispatch (manual deployments don't need approval)
   approval:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -170,7 +194,7 @@ jobs:
       reviewers:
         - ianlmk
     steps:
-      - name: ⏳ Waiting for manual approval
+      - name: ⏳ Waiting for manual approval (auto-deploy)
         run: |
           echo "🔒 Manual approval required before deploying to production"
           echo "Repository: ${{ github.repository }}"
@@ -179,18 +203,77 @@ jobs:
           echo ""
           echo "Approvers: Check Actions tab to approve this deployment"
 
-  # Apply stage - runs after approval
+  # Determine which modules to deploy
+  determine-modules:
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch')
+    needs: detect-changes
+    outputs:
+      modules: ${{ steps.modules.outputs.matrix }}
+    steps:
+      - name: Determine modules to deploy
+        id: modules
+        run: |
+          echo "📋 Determining modules to deploy..."
+          echo ""
+          
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "🎯 Manual dispatch detected"
+            # Manual dispatch - use selected modules
+            MODULES=()
+            [[ "${{ github.event.inputs.deploy_free_tier }}" == "true" ]] && MODULES+=("free-tier")
+            [[ "${{ github.event.inputs.deploy_wordpress }}" == "true" ]] && MODULES+=("wordpress-infra")
+            [[ "${{ github.event.inputs.deploy_ghost }}" == "true" ]] && MODULES+=("ghost-infra")
+            
+            # If no modules selected, show error
+            if [ ${#MODULES[@]} -eq 0 ]; then
+              echo "❌ Error: No modules selected for deployment"
+              exit 1
+            fi
+            
+            # Convert to JSON array
+            printf -v MODULES_JSON '%s\n' "${MODULES[@]}"
+            MODULES_JSON=$(echo "${MODULES[@]}" | jq -R -s -c 'split(" ")')
+            echo "matrix=$MODULES_JSON" >> $GITHUB_OUTPUT
+          else
+            # Auto deploy - use changed modules or all if change detection failed
+            echo 'matrix=["free-tier","wordpress-infra","ghost-infra"]' >> $GITHUB_OUTPUT
+          fi
+
+  # Apply stage - runs after approval (auto-deploy) or directly (manual)
+  # For auto-deploy (push): approval job must pass first
+  # For manual dispatch: skip approval, deploy selected modules immediately
   apply:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [detect-changes, approval]  # Requires approval job to pass
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch')
+    needs: [detect-changes, determine-modules, approval]
+    # Note: approval job is optional - it only runs for auto-deploy
+    # For manual dispatch, it skips and apply proceeds with determine-modules
     
     strategy:
       matrix:
-        module: [free-tier, wordpress-infra, ghost-infra]
+        module: ${{ fromJson(needs.determine-modules.outputs.modules) }}
       max-parallel: 1  # Sequential to prevent race conditions
     
     steps:
+      - name: Deployment Info
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "🚀 MANUAL DEPLOYMENT (workflow_dispatch)"
+            echo "Selected modules: ${{ matrix.module }}"
+            echo ""
+            echo "Approval: SKIPPED (manual dispatch)"
+          else
+            echo "🔄 AUTO DEPLOYMENT (push to main)"
+            echo "Deploying: ${{ matrix.module }}"
+            echo ""
+            echo "Approval: REQUIRED (auto-deploy)"
+          fi
+      
       - name: Checkout code
         uses: actions/checkout@v4
       

@@ -191,8 +191,6 @@ jobs:
     needs: detect-changes
     environment:
       name: production
-      reviewers:
-        - ianlmk
     steps:
       - name: ⏳ Waiting for manual approval (auto-deploy)
         run: |

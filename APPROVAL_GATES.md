@@ -2,8 +2,21 @@
 
 ## Overview
 
-Three-layer approval system for production infrastructure deployments:
+Three deployment strategies with flexible approval gates:
 
+### Strategy 1: Auto-Deploy (Production-Safe)
+- Trigger: Git push to main
+- Approval: REQUIRED ✅
+- Modules: All changed modules
+- Use: Production deployments
+
+### Strategy 2: Manual Dispatch (Developer-Friendly)
+- Trigger: GitHub Actions UI
+- Approval: SKIPPED
+- Modules: Select specific ones
+- Use: Development, testing, quick iterations
+
+### Strategy 3: Three-Layer Approval (Maximum Safety)
 1. **PR Review Approval** (Human review)
 2. **CI Validation** (Automated checks)
 3. **Production Deployment Approval** (Final gate before apply)
@@ -374,3 +387,167 @@ All approval methods: **$0/month**
    - Confirm tofu apply ran
 
 Done! Production deployments now require approval. 🔒
+
+---
+
+## Workflow Dispatch - Manual Independent Deployments
+
+### What is it?
+
+`workflow_dispatch` allows you to manually trigger deployments **without approval** and **select specific modules** from the GitHub Actions UI.
+
+### When to use
+
+- **Development:** Test changes faster without approval delays
+- **Module-specific:** Deploy only `wordpress-infra`, leave others untouched
+- **Iteration:** Quickly test network changes without involving other modules
+- **Hotfixes:** Deploy a specific fix without full stack deployment
+
+### How to use
+
+#### Step 1: Go to Actions tab
+```
+https://github.com/ianlmk/aws-infra/actions
+```
+
+#### Step 2: Select workflow
+Click **"Terraform Plan & Apply"**
+
+#### Step 3: Click "Run workflow"
+Look for the **"Run workflow"** dropdown button on the right
+
+#### Step 4: Select modules
+```
+☐ Deploy free-tier?
+☐ Deploy wordpress-infra?
+☐ Deploy ghost-infra?
+```
+
+Check the boxes for modules you want to deploy
+
+#### Step 5: Click "Run workflow"
+Workflow starts immediately, no approval needed
+
+### Deployment modes
+
+| Scenario | free-tier | wordpress | ghost | Use case |
+|----------|-----------|-----------|-------|----------|
+| Network only | ✅ | ❌ | ❌ | Test VPC changes |
+| App only | ❌ | ✅ | ❌ | Update WordPress |
+| Two modules | ✅ | ✅ | ❌ | Deploy network + app |
+| All modules | ✅ | ✅ | ✅ | Full deployment |
+
+### Example: Deploy WordPress only
+
+```
+Step 1: Actions > "Terraform Plan & Apply"
+Step 2: Check ONLY "Deploy wordpress-infra?"
+Step 3: Click "Run workflow"
+
+Result:
+  - free-tier: UNCHANGED
+  - wordpress-infra: DEPLOYED ✅
+  - ghost-infra: UNCHANGED
+  
+Time: ~15 minutes
+Approval: NONE
+```
+
+### Comparison: Auto vs Manual
+
+| Feature | Auto-Deploy | Manual Dispatch |
+|---------|-------------|-----------------|
+| Trigger | git push | Actions UI |
+| Approval | ✅ Required | ❌ Skipped |
+| Module selection | Auto-detected | Manual (checkboxes) |
+| Best for | Production | Development |
+| Safety | ⭐⭐⭐⭐⭐ | ⭐⭐ |
+| Speed | Slow (approval) | Fast (immediate) |
+
+### Workflow logic
+
+#### Auto-Deploy (push to main)
+```
+git push → PR approval → CI validates → Approval gate → Apply (all modules)
+```
+
+#### Manual Dispatch (Actions UI)
+```
+Actions tab → Select modules → Run → Apply (selected only)
+```
+
+**Key difference:** Manual dispatch skips both PR review AND approval gate
+
+### Safe practices
+
+1. **Use for development only**
+   - Development/staging: Use manual dispatch
+   - Production: Use auto-deploy with approval
+
+2. **Test one module first**
+   - Don't deploy all 3 at once
+   - Deploy free-tier first (lowest risk)
+   - Then wordpress-infra
+
+3. **Verify before applying**
+   - Watch the apply job logs
+   - Check outputs
+   - Never auto-approve blind
+
+4. **Use auto-deploy for critical changes**
+   - Network restructuring: Use auto-deploy (approval)
+   - Database migrations: Use auto-deploy (approval)
+   - Quick fixes: Can use manual dispatch
+
+### Error handling
+
+**Error: "No modules selected for deployment"**
+- You clicked "Run workflow" without checking any modules
+- Fix: Check at least one module, try again
+
+**Error: "Deployment failed"**
+- tofu apply encountered an error
+- Fix: Check logs, fix issue, try manual dispatch again
+- Consider: Use auto-deploy for critical changes (forces PR review)
+
+### Rollback
+
+If deployment goes wrong:
+
+**Manual dispatch (quick rollback):**
+```bash
+cd module-that-broke
+tofu destroy  # Local destroy
+```
+
+**Auto-deploy (use git + approval):**
+```bash
+git revert commit-hash  # Create new PR
+# Go through approval process
+# Deploy fix via auto-deploy
+```
+
+---
+
+## When to use each deployment mode
+
+### Use Auto-Deploy (approval required) when:
+- ✅ Production infrastructure
+- ✅ Network changes (might affect all apps)
+- ✅ Database migrations
+- ✅ Security-related changes
+- ✅ Team deployments (need code review)
+
+### Use Manual Dispatch (no approval) when:
+- ✅ Development environment
+- ✅ Testing infrastructure changes
+- ✅ Single module updates
+- ✅ Quick iterations (fast feedback loop)
+- ✅ Personal dev account (no team approval)
+
+---
+
+**Remember:** Two deployment modes for maximum flexibility!
+
+- **Production:** Auto-deploy with approval ✅
+- **Development:** Manual dispatch, select modules ⚡

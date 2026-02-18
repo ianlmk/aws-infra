@@ -15,6 +15,29 @@ on:
       - 'wordpress-infra/**'
       - 'ghost-infra/**'
 
+# Approval Requirements:
+#
+# 1. PULL REQUEST APPROVAL (GitHub Branch Protection)
+#    - Required reviewers: Set in Settings > Branch protection > main
+#    - Dismiss stale PR approvals: Yes (recommended)
+#
+# 2. CI VALIDATION (This Workflow)
+#    - Plan: Must pass for all changed modules
+#    - Lint: Must pass for Terraform syntax
+#
+# 3. PRODUCTION DEPLOYMENT APPROVAL (Environment Protection)
+#    - Settings > Environments > production
+#    - Require reviewers: Enable
+#    - Add approvers (yourself, team, etc.)
+#
+# Flow:
+#   PR → Author creates PR
+#      → CI validates (plan + lint)
+#      → Reviewers approve PR
+#      → Merge to main
+#      → Deployment approval gate (requires production approver)
+#      → tofu apply runs
+
 env:
   AWS_REGION: us-east-2
   TOFU_VERSION: 1.6.0
@@ -137,13 +160,30 @@ jobs:
           fi
         continue-on-error: true
 
-  # Apply stage - runs on merge to main
-  apply:
+  # Approval gate - manual approval before apply
+  approval:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: detect-changes
     environment:
       name: production
+      reviewers:
+        - ianlmk
+    steps:
+      - name: ⏳ Waiting for manual approval
+        run: |
+          echo "🔒 Manual approval required before deploying to production"
+          echo "Repository: ${{ github.repository }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo ""
+          echo "Approvers: Check Actions tab to approve this deployment"
+
+  # Apply stage - runs after approval
+  apply:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [detect-changes, approval]  # Requires approval job to pass
     
     strategy:
       matrix:

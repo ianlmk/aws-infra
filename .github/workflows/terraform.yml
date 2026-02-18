@@ -248,9 +248,9 @@ jobs:
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch')
-    needs: [detect-changes, determine-modules, approval]
-    # Note: approval job is optional - it only runs for auto-deploy
-    # For manual dispatch, it skips and apply proceeds with determine-modules
+    needs: [detect-changes, determine-modules]
+    # Note: approval job runs separately; we don't depend on it here
+    # to allow workflow_dispatch (manual) to proceed without approval
     
     strategy:
       matrix:
